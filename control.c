@@ -17,71 +17,69 @@
 #define KEY 2401 //L is real
 
 //For Señor DW: Anand did this on Mac, Meredith did this on ssh Ubuntu shell so this might be wonky
-/*
+
 union semun {
   int val;              
   struct semid_ds *buf;   
   unsigned short *array;         
   struct seminfo *__buf; 
-}
-*/
-int main(char * arguments[]){
-  printf("Hello there. \n Valid arguments include: \n
-'-c': Make your story \n
-'-r': Remove your story \n
-'-v': View your story \n
+};
 
-What would you like to do?: ");
+  int main(char * arguments[]){
 
   int semid;
   int shmid;
-
   int fd;
-
-  union semun data;
-  data.val = 1;
-  
-  //-c
   
   if (strcmp(arguments[0],"-c") == 0){
-    semid = semget(KEY,1,IPC_CREAT|IPC_EXCL|0644);
-    shmid = shmget(KEY,256,IPC_CREAT|0644);
-    fd = open("maple_story.txt",O_TRUNC | O_CREAT, 0644);
+    semid = semget(KEY,1,IPC_CREAT|IPC_EXCL|0644); //create one new semaphore
+    shmid = shmget(KEY,256,IPC_CREAT|IPC_EXCL|0644); //create one new segment of shared memory
+    fd = open("maple_story.txt",O_TRUNC | O_CREAT, 0644); //open story file
     if (fd == -1){
-      printf("Could not create the story :(");
+      printf("Could not create the story :(\n");
     }
-    semctl(semid,0,SETVAL,data);
-    close(fd);
+    union semun data;
+    data.val = 1;
+    semctl(semid,0,SETVAL,data); //set semaphore value to 0
+    close(fd); //close file
+    printf("File, shared memory, and semaphore successfully created\n");
   }
 
   if (strcmp(arguments[0],"-r") == 0){
-    fd = open("maple_story.txt",O_TRUNC|O_CREAT,0644);
+    fd = open("maple_story.txt", O_RDONLY, 0644); //open file with read permissions
     
-    semid = semget(KEY,1,IPC_CREAT|IPC_EXCL|0644);
-    shmid = shmget(KEY,256,IPC_CREAT|0644);
-    semctl(semid,0,IPC_RMID);
-    shmctl(shmid,IPC_RMID,NULL);
+    semid = semget(KEY, 1, 0); //get key of existing semaphore
+    shmid = shmget(KEY, 256, 0); //get key of existing shared memory
+    shmctl(shmid,IPC_RMID,NULL); //remove shared memory
 
+    //down the semaphore
+    struct sembuf down;
+    down.sem_op = -1;
+    down.sem_num = 0;
+    down.sem_flg = SEM_UNDO;
+    semop(semid, &down, 1);
+    semctl(semid, 0, IPC_RMID); //remove the semaphore
+    
+    char cur_story[9001]; //declare buffer
+    read(fd,cur_story,9001); //read story into buffer
+    printf("%s",cur_story); //print story
+    close(fd); //close file
+
+    remove("maple_story.txt"); //remove file
+    printf("Successfully removed semaphore, shared memory, and file\n");
+  }
+  
+  if (strcmp(arguments[0],"-v") == 0){
+    fd = open("maple_story.txt", O_RDONLY, 0644); //opens file
+
+    //reading story into a buffer and printing it
     char * cur_story = malloc(9001);
     read(fd,cur_story,sizeof(cur_story));
-    printf("%s",s);
-    close(fd);
-
-    remove("maple_story.txt");
-  }
-  if (*strcmp(arguments[0],"-v") == 0){
-    fd = open("maple_story.txt",O_TRUNC|O_CREAT,0644);
-    
-    semid = semget(KEY,1,IPC_CREAT|IPC_EXCL|0644);
-    shmid = shmget(KEY,256,IPC_CREAT|0644);
-    semctl(semid,0,IPC_RMID);
-    shmctl(shmid,IPC_RMID,NULL);
-
-    char * cur_story = malloc(9001);
-    read(fd,cur_story,sizeof(cur_story));
-    printf("%s",s);
+    printf("%s",cur_story);
     close(fd);
   }
+  
+}
     
     
     
