@@ -22,13 +22,13 @@ union semun {
   struct seminfo *__buf; 
 };
 
-int main(char * arguments[]){
+int main(int argc, char *argv[]){
 
   int semid;
   int shmid;
   int fd;
   
-  if (strcmp(arguments[1],"-c") == 0){
+  if (strcmp(argv[1],"-c") == 0){
     semid = semget(KEY,1,IPC_CREAT|IPC_EXCL|0644); //create one new semaphore
     shmid = shmget(KEY,256,IPC_CREAT|IPC_EXCL|0644); //create one new segment of shared memory
     fd = open("maple_story.txt",O_TRUNC | O_CREAT, 0644); //open story file
@@ -42,7 +42,7 @@ int main(char * arguments[]){
     printf("File, shared memory, and semaphore successfully created\n");
   }
 
-  if (strcmp(arguments[1],"-r") == 0){
+  if (strcmp(argv[1],"-r") == 0){
     fd = open("maple_story.txt", O_RDONLY, 0644); //open file with read permissions
     
     semid = semget(KEY, 1, 0); //get key of existing semaphore
@@ -66,12 +66,12 @@ int main(char * arguments[]){
     printf("Successfully removed semaphore, shared memory, and file\n");
   }
   
-  if (strcmp(arguments[1],"-v") == 0){
+  if (strcmp(argv[1],"-v") == 0){
     fd = open("maple_story.txt", O_RDONLY, 0644); //opens file
 
     //reading story into a buffer and printing it
-    char * cur_story = malloc(9001);
-    read(fd,cur_story,sizeof(cur_story));
+    char cur_story[9001];
+    read(fd,cur_story,9001);
     printf("%s",cur_story);
     close(fd);
   }
